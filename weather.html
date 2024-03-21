@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./index.css" />
+    <title>Weather API</title>
+    <meta
+      name="description"
+      content="Search for the current weather in any town in the world"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Alla ikoner är hämtade från länken: https://erikflowers.github.io/weather-icons/  -->
+    <main id="all-container">
+      <div id="search-container">
+        <div id="search-inner">
+          <input id="input" placeholder="Enter City Name" type="text" />
+          <button id="button-search">Search</button>
+        </div>
+      </div>
+      <div id="error-message">
+        <p>
+          I'm sorry, but that city seems alien to me, as if it exists in another
+          world.
+        </p>
+        <div id="alien-div">
+          <img
+            id="alien"
+            src="weather_icons/alien.svg"
+            alt="Icon of an Alien face"
+          />
+        </div>
+      </div>
+      <div id="main-container">
+        <div id="weather-container">
+          <div id="city-temp">
+            <h2 id="store-city"></h2>
+            <p id="store-temp"></p>
+          </div>
+          <div id="weather-icon">
+            <img id="store-img" src="" alt="" />
+          </div>
+          <div id="weather-details">
+            <p id="store-feels-like"></p>
+            <p id="store-weather-details"></p>
+          </div>
+        </div>
+      </div>
+      <div id="more-weather-container">
+        <div id="more-weather-info">
+          <div id="top-left">
+            <div class="sort-icon">
+              <img
+                class="spec-weather-icon"
+                src="weather_icons/maxtemp.svg"
+                alt="icon representing the maximum temperature of the day"
+              />
+              <p>Max. Temperature</p>
+            </div>
+            <div id="max-temp-number"></div>
+          </div>
+          <div id="top-right">
+            <div class="sort-icon">
+              <img
+                class="spec-weather-icon"
+                src="weather_icons/wind.svg"
+                alt="icon representing wind speed, meters per second"
+              />
+              <p>Wind</p>
+            </div>
+            <div id="wind-number"></div>
+          </div>
+          <div id="bottom-left">
+            <div class="sort-icon">
+              <img
+                class="spec-weather-icon"
+                src="weather_icons/mintemp.svg"
+                alt="icon representing minimum temperature of the day"
+              />
+              <p>Min. Temperature</p>
+            </div>
+            <div id="min-temp-number"></div>
+          </div>
+          <div id="bottom-right">
+            <div class="sort-icon">
+              <img
+                class="spec-weather-icon"
+                src="weather_icons/humidity.svg"
+                alt="icon representing the humidity in percentage"
+              />
+              <p>Humidity</p>
+            </div>
+            <div id="humidity-number"></div>
+          </div>
+        </div>
+      </div>
+      <div id="chart-align-center">
+        <div id="chart-container">
+          <div id="diagram-chart-js">
+            <canvas id="myChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </main>
+    <!-- Här börjar mina script -->
+    <script src="index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      // Nedan följer script och funktionerna för mitt diagram (Chart.js) som visar temperaturen under dagen
+      function getWeatherForecast(city) {
+        let url = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=9e52936988af5a9745589d048709a390`;
+
+        fetch(url)
+          .then((response) => response.json())
+          .then((data) => showForecast(data));
+      }
+
+      function showForecast(forecast) {
+        let list = forecast.list;
+        let tempList = [];
+        let currentDate = null; //Försökte använda en tom sträng "" först men det fungerade inte. Null fick allt att fungera som det skulle.
+
+        for (let i = 0; i < list.length; i++) {
+          let dtTxt = list[i].dt_txt;
+          let currentTemp = list[i].main.temp;
+          let newDate = dtTxt.split(" ")[0]; // Plocka ut bara datumet och inte klockslaget från dt_txt https://builtin.com/software-engineering-perspectives/split-string-javascript
+
+          if (currentDate === null) {
+            // Spara första datum och temperatur
+            currentDate = newDate;
+            tempList.push(currentTemp);
+          } else if (newDate !== currentDate) {
+            // När datum ändras, sluta spara och bryt loopen
+            break;
+          } else {
+            // Spara temperatur för samma datum
+            tempList.push(currentTemp);
+          }
+        }
+
+        console.log(tempList);
+
+        let date = forecast.list;
+        let dateTimeList = [];
+        let currentDateTime = null;
+
+        for (let i = 0; i < date.length; i++) {
+          let dtTxt = list[i].dt_txt;
+
+          if (currentDateTime === null) {
+            currentDateTime = dtTxt; // Spara det första datumet och tiden
+          }
+
+          if (dtTxt.split(" ")[0] !== currentDateTime.split(" ")[0]) {
+            // Datumet har ändrats, bryt loopen
+            break;
+          }
+
+          dateTimeList.push(dtTxt);
+        }
+        console.log(dateTimeList);
+        console.log(forecast);
+
+        const ctx = document.getElementById("myChart");
+        // Mitt diagram nedan. Det var inte helt enkelt att följa dokumentationen i Chart.js. Klurigt att hitta hur jag skulle byta färg på y- och x-axels siffror samt att byta färg på själva rutnätet, men det gick till slut.
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: dateTimeList,
+            datasets: [
+              {
+                label: "# of °C throughout the day",
+                data: tempList,
+                borderWidth: 1,
+                backgroundColor: "rgba(255, 134, 196, 0.8)",
+                borderColor: "rgba(255, 255, 255, 1)",
+                borderWidth: "2",
+              },
+            ],
+          },
+          options: {
+            plugins: {
+              legend: {
+                labels: {
+                  color: "white",
+                  font: {
+                    size: 18,
+                  },
+                },
+              },
+            },
+            scales: {
+              y: {
+                ticks: {
+                  color: "white",
+                  font: "Roboto",
+                },
+                grid: {
+                  color: "white",
+                },
+                beginAtZero: true,
+              },
+              x: {
+                ticks: {
+                  color: "white",
+                  font: "Roboto",
+                },
+                grid: {
+                  color: "white",
+                },
+              },
+            },
+            responsive: true,
+            mainAspectRatio: false,
+          },
+        });
+      }
+    </script>
+  </body>
+</html>
